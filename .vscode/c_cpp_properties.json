@@ -1,0 +1,31 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "EDU-CIAA-NXP",
+            "compilerPath": "${env:HOME}/CIAA_Software_1.1-linux-x64/tools/gcc-arm-embedded/bin/arm-none-eabi-gcc",
+            "compilerArgs": ["-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"],
+            "intelliSenseMode": "linux-gcc-arm",
+            "cStandard": "c99",
+            "includePath": [
+                "${workspaceFolder}/libs/cmsis_core/inc",
+                "${workspaceFolder}/libs/cmsis_dsp/inc",
+                "${workspaceFolder}/libs/sys_newlib/inc",
+                "${workspaceFolder}/libs/lpc_open/boards/edu_ciaa_nxp/inc",
+                "${workspaceFolder}/libs/lpc_open/boards/inc",
+                "${workspaceFolder}/libs/lpc_open/lpc_chip_43xx/inc",
+                "${workspaceFolder}/libs/lpc_open/lpc_chip_43xx/usbd_rom",
+                "${workspaceFolder}/libs/lpc_open/lpc_startup/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/base/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/soc/core/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/soc/peripherals/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/soc/peripherals/usb/device/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/soc/peripherals/usb/host/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/board/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/abstract_modules/inc",
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/external_peripherals/inc"
+            ],
+            "defines": ["BOARD=edu_ciaa_nxp", "USE_SAPI", "CORE_M4", "CHIP_LPC43XX", "__USE_LPCOPEN", "__USE_NEWLIB", "__FPU_PRESENT=1U", "ARM_MATH_CM4"]
+        }
+    ]
+}
