@@ -4,10 +4,21 @@
         {
             "name": "EDU-CIAA-NXP",
             "compilerPath": "${env:HOME}/CIAA_Software_1.1-linux-x64/tools/gcc-arm-embedded/bin/arm-none-eabi-gcc",
-            "compilerArgs": ["-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"],
+            "compilerArgs": [
+                "-mcpu=cortex-m4",
+                "-mthumb",
+                "-mfloat-abi=hard",
+                "-mfpu=fpv4-sp-d16"
+            ],
             "intelliSenseMode": "linux-gcc-arm",
             "cStandard": "c99",
             "includePath": [
+                "${workspaceFolder}/app/inc",
+                "${workspaceFolder}/libs/freertos/include",
+                "${workspaceFolder}/libs/freertos/include/private",
+                "${workspaceFolder}/libs/freertos/source/portable/ARM_CM4F",
+                "${workspaceFolder}/libs/freertos/source/portable/ARM_CM",
+                "${workspaceFolder}/libs/freertos/source/portable/lpc4337",
                 "${workspaceFolder}/libs/cmsis_core/inc",
                 "${workspaceFolder}/libs/cmsis_dsp/inc",
                 "${workspaceFolder}/libs/sys_newlib/inc",
@@ -23,9 +34,21 @@
                 "${workspaceFolder}/libs/sapi/sapi_v0.5.2/soc/peripherals/usb/host/inc",
                 "${workspaceFolder}/libs/sapi/sapi_v0.5.2/board/inc",
                 "${workspaceFolder}/libs/sapi/sapi_v0.5.2/abstract_modules/inc",
-                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/external_peripherals/inc"
+                "${workspaceFolder}/libs/sapi/sapi_v0.5.2/external_peripherals/inc",
+                "${workspaceFolder}/drivers/inc"
             ],
-            "defines": ["BOARD=edu_ciaa_nxp", "USE_SAPI", "CORE_M4", "CHIP_LPC43XX", "__USE_LPCOPEN", "__USE_NEWLIB", "__FPU_PRESENT=1U", "ARM_MATH_CM4"]
+            "defines": [
+                "BOARD=edu_ciaa_nxp",
+                "USE_SAPI",
+                "USE_FREERTOS",
+                "TICK_OVER_RTOS",
+                "CORE_M4",
+                "CHIP_LPC43XX",
+                "__USE_LPCOPEN",
+                "__USE_NEWLIB",
+                "__FPU_PRESENT=1U",
+                "ARM_MATH_CM4"
+            ]
         }
     ]
 }

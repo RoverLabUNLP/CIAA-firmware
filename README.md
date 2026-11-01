@@ -1,6 +1,6 @@
 # EDU-CIAA-NXP con VS Code
 
-Proyecto C para la EDU-CIAA-NXP (LPC4337, Cortex-M4), con sAPI.
+Proyecto C para la EDU-CIAA-NXP (LPC4337, Cortex-M4), con sAPI y FreeRTOS.
 Reutiliza GCC ARM 8.2.1 y las bibliotecas de CIAA Software 1.1 instalados
 en este equipo. No requiere abrir Eclipse.
 
@@ -8,11 +8,14 @@ en este equipo. No requiere abrir Eclipse.
 
 1. Abrir esta carpeta en VS Code.
 2. Instalar la extensión recomendada **C/C++ de Microsoft**.
-3. Editar `app/src/main.c`.
+3. Comenzar por `app/src/main.c` y seguir la [guía de la aplicación RTOS](app/README.md).
 4. Presionar **Ctrl+Shift+B** para ejecutar **CIAA: compilar**.
 
 También se puede ejecutar `make` en la terminal de esta carpeta.
-El ejemplo alterna LEDB cada 500 ms. La salida está en `app/out/app.elf`
+El esquema crea seis tareas. La tarea de estado alterna LEDB cada 500 ms;
+las mediciones permanecen inválidas y las salidas propuestas en cero.
+No se acciona ningún motor ni se reciben comandos UART todavía.
+La salida está en `app/out/app.elf`
 y `app/out/app.bin`. Los errores aparecen en el panel Problemas.
 Para eliminar los resultados: `make clean` o la tarea **CIAA: limpiar**.
 
@@ -34,7 +37,7 @@ si se cambia esa ubicación.
 `tools/configure.sh` crea los enlaces locales `libs` y `scripts` al paquete.
 No modifica la instalación original. El Makefile utiliza el sistema de
 compilación `firmware_v3` distribuido en ese paquete. `app/config.mk`
-selecciona sAPI y LPCOpen, sin RTOS. Las bibliotecas conservan sus licencias
+selecciona sAPI, LPCOpen y FreeRTOS con `heap_4`. Las bibliotecas conservan sus licencias
 en la instalación de CIAA Software.
 
 El [manual de CIAA](https://www.proyecto-ciaa.com.ar/devwiki/doku.php%3Fid%3Ddesarrollo%3Afirmware%3Auser_manual.html)
@@ -45,6 +48,9 @@ ejemplo. Aquí se usa el entorno sAPI que ya está instalado en este equipo.
 La carga y depuración requieren conectar la placa y configurar el acceso USB.
 Este proyecto prepara la compilación; todavía no se verificó su ejecución
 sobre una placa física.
+
+Al cambiar opciones de compilación en `app/config.mk`, ejecutar `make clean`
+antes de volver a compilar para no reutilizar objetos de otra configuración.
 
 Para el detalle del entorno y las instrucciones de handoff para agentes con
 VSCode CIAA Bridge, consultar [docs-for-vscode-ciaa-bridge](docs-for-vscode-ciaa-bridge/README.md).
