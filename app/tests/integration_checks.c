@@ -23,6 +23,7 @@ static mpu6050Cal_t final_calibration = MPU6050_CAL_OK;
 TickType_t xTaskGetTickCount(void) { return now; }
 void enlaceInit(void) { pending = false; }
 void enlaceProcesar(void) {}
+void enlaceLeerStats(enlaceStats_t *stats) { *stats = (enlaceStats_t){0}; }
 uint8_t enlaceTwistNuevo(enlaceTwist_t *twist)
 {
     if (!pending) return 0;
@@ -39,6 +40,7 @@ void motoresInit(void) {}
 void encodersInit(void) {}
 void hcsr04Init(void) {}
 void bateriaInit(void) {}
+void uartWriteString(int port, const char *text) { (void)port; (void)text; }
 void i2cInit(int bus, uint32_t speed) { (void)bus; assert(speed == 100000U); }
 uint8_t vl53l0xIniciarVarios(vl53l0x_t *devices, const gpioMap_t *pins,
                             const uint8_t *addresses, uint8_t count)
@@ -122,6 +124,10 @@ static void test_commands(void)
     assert(receive(1000, -1000, &cmd));
     assert(fabsf(cmd.linear_m_s - 0.20f) < 1e-6f);
     assert(cmd.angular_rad_s == -1.0f && !cmd.rearm);
+    AppCommunicationDebug converted_debug;
+    app_communication_get_debug(&converted_debug);
+    assert(converted_debug.converted_linear_mm_s == 200);
+    assert(converted_debug.converted_angular_mrad_s == -1000);
     now = 200;
     assert(receive(-500, 250, &cmd));
     assert(fabsf(cmd.linear_m_s + 0.10f) < 1e-6f);
@@ -129,6 +135,11 @@ static void test_commands(void)
     now = 300;
     assert(!receive(1001, 0, &cmd) && cmd.received_at == 200);
     assert(!receive(0, -1001, &cmd) && cmd.received_at == 200);
+    AppCommunicationDebug debug;
+    app_communication_get_debug(&debug);
+    assert(debug.rejected_range == 2 && debug.decision == APP_RX_RANGE);
+    assert(debug.motion_accepted == 2);
+    assert(debug.raw_v == 0 && debug.raw_w == -1001);
     assert(!app_communication_receive(&cmd)); /* Sin nueva trama. */
     now = 500; /* El paquete invalido no renovo el plazo de 300 ms. */
     assert(!receive(1000, 0, &cmd) && cmd.received_at == 200);
@@ -167,6 +178,14 @@ static void test_state_rearm(void)
     inputs.linear_m_s = 0.2f;
     vehicle_state_update(&inputs);
     assert(state == VEHICLE_STOPPED); /* Movimiento no rearma. */
+    VehicleCommand fresh_neutral = {.received_at = 100};
+    assert(app_command_is_current(&fresh_neutral, true, 100));
+    assert(!app_command_is_current(&fresh_neutral, false, 100));
+    assert(app_command_is_current(&fresh_neutral, true, 399));
+    assert(!app_command_is_current(&fresh_neutral, true, 400));
+    /* Safety podia conservar un timeout del comando anterior: StateTask
+     * debe recomputarlo con el nuevo cero antes de evaluar el rearme. */
+    inputs.communication_lost = !app_command_is_current(&fresh_neutral, true, 100);
     inputs.linear_m_s = 0;
     inputs.rearm_requested = true;
     vehicle_state_update(&inputs);

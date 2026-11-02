@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "auto_remoto")(type "KiCad")(uri "${KIPRJMOD}/auto_remoto.kicad_sym")(options "")(descr "Modulos del Auto remoto"))
+)

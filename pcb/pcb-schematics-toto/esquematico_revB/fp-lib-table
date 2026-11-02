@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "auto_remoto")(type "KiCad")(uri "${KIPRJMOD}/auto_remoto.pretty")(options "")(descr "Footprints del Auto remoto con los pads de la catedra"))
+)

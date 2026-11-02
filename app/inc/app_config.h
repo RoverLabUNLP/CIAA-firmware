@@ -12,6 +12,9 @@
 #define APP_STATE_PERIOD_MS      50U
 #define APP_TELEMETRY_PERIOD_MS  50U /* 20 Hz, independiente del sondeo UART. */
 #define APP_HEARTBEAT_PERIOD_MS 500U
+#define APP_DEBUG_PERIOD_MS 5U
+#define APP_DEBUG_REPORT_MS 1000U
+#define APP_DEBUG_STACK_WORDS 512U
 #define APP_COMMAND_TIMEOUT_MS 300U /* Objetivo preliminar; no incluye actuacion. */
 #define APP_DISTANCE_INVALID_ALERT_COUNT 5U
 #define APP_IMU_CALIBRATION_SAMPLES 200U

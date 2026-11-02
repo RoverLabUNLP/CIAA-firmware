@@ -2,6 +2,9 @@
 #include "app_rtos.h"
 #include "semphr.h"
 #include "app_config.h"
+#include "app_debug.h"
+#include "app_hardware.h"
+#include "motores.h"
 
 static SemaphoreHandle_t data_mutex;
 static SemaphoreHandle_t vehicle_state_mutex;
@@ -139,8 +142,8 @@ void app_fatal(void)
     taskDISABLE_INTERRUPTS();
     gpioWrite(LEDB, OFF);
     gpioWrite(LEDR, ON);
-    /* TODO al integrar motores: incorporar una deshabilitacion inmediata
-     * que no dependa de tareas ni de adquirir un mutex. */
+    if (app_hardware_motors_ready()) motoresParar();
+    app_debug_panic("\r\nAPP FATAL: assert/heap/pila. Ejecucion detenida.\r\n");
     for (;;) {
         /* Punto de interrupcion para el depurador. No retornar. */
     }

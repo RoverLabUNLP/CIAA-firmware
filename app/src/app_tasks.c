@@ -11,6 +11,7 @@
 #include "hcsr04.h"
 #include "app_imu.h"
 #include "app_communication.h"
+#include "app_debug.h"
 /* Cada tarea se limita a su funcion; el control es el unico dueño del PWM. */
 
 static void encoder_task(void *argument)
@@ -147,6 +148,8 @@ static void control_task(void *argument)
         vehicle_get_state(&state);
         bool movement_enabled = initialized && command_available &&
                                 !communication_lost && !command.stop &&
+                                app_command_is_current(&command, command_available,
+                                                       xTaskGetTickCount()) &&
                                 (command.linear_m_s != 0.0f ||
                                  command.angular_rad_s != 0.0f) &&
                                 (state == VEHICLE_FORWARD ||
@@ -205,9 +208,8 @@ static void safety_task(void *argument)
     for (;;) {
         TickType_t now = xTaskGetTickCount();
         VehicleData *data = app_data_lock();
-        data->communication_lost = !data->has_command ||
-            (TickType_t)(now - data->command.received_at) >=
-                pdMS_TO_TICKS(APP_COMMAND_TIMEOUT_MS);
+        data->communication_lost = !app_command_is_current(
+            &data->command, data->has_command, now);
         /* TODO: validar antiguedad de sensores/encoders y definir fallas. */
         app_data_unlock();
         vTaskDelayUntil(&previous_wake, pdMS_TO_TICKS(APP_SAFETY_PERIOD_MS));
@@ -342,6 +344,10 @@ static void state_task(void *argument)
         }
 
         VehicleData *data = app_data_lock();
+        /* Evaluar el timeout del comando recien consumido, sin reutilizar
+         * la bandera que Safety calculo para el comando anterior. */
+        data->communication_lost = !app_command_is_current(
+            &data->command, data->has_command, xTaskGetTickCount());
         StateInputs state_inputs = {
             .system_initialized = data->system_initialized,
             .command_available = data->has_command &&
@@ -396,6 +402,17 @@ static void state_task(void *argument)
     }
 }
 
+static void debug_task(void *argument)
+{
+    (void)argument;
+    app_debug_init();
+    TickType_t previous_wake = xTaskGetTickCount();
+    for (;;) {
+        app_debug_poll();
+        vTaskDelayUntil(&previous_wake, pdMS_TO_TICKS(APP_DEBUG_PERIOD_MS));
+    }
+}
+
 void app_tasks_create(void)
 {
     /* Todas las creaciones se verifican ANTES de arrancar el planificador. */
@@ -424,4 +441,7 @@ void app_tasks_create(void)
     result = xTaskCreate(imu_task,"imu_update",APP_TASK_STACK_WORDS,
                          NULL, APP_IMU_PRIORITY, NULL );
     configASSERT(result == pdPASS)  ;                   
+    result = xTaskCreate(debug_task, "Debug", APP_DEBUG_STACK_WORDS,
+                         NULL, APP_STATE_PRIORITY, NULL);
+    configASSERT(result == pdPASS);
 }

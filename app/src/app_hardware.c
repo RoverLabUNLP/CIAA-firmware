@@ -11,6 +11,7 @@
 static vl53l0x_t tof_devices[APP_TOF_COUNT];
 static mpu6050_t imu_device;
 static bool imu_ready;
+static bool motors_ready;
 static const gpioMap_t tof_xshut[APP_TOF_COUNT] = {
     PIN_XSHUT1, PIN_XSHUT2, PIN_XSHUT3
 };
@@ -25,6 +26,7 @@ bool app_hardware_init(void)
 
     /* Dejar actuadores y entradas en un estado conocido antes del scheduler. */
     motoresInit();
+    motors_ready = true;
     encodersInit();
     hcsr04Init();
     bateriaInit();
@@ -33,6 +35,8 @@ bool app_hardware_init(void)
     i2cInit(BUS_I2C, 100000U);
     uint8_t initialized_tof = vl53l0xIniciarVarios(
         tof_devices, tof_xshut, tof_addresses, APP_TOF_COUNT);
+    uartWriteString(UART_USB, initialized_tof == APP_TOF_COUNT ?
+        "APP: ToF 3/3 OK.\r\n" : "APP: faltan sensores ToF.\r\n");
 
     for (uint8_t i = 0; i < APP_TOF_COUNT; i++) {
         if (tof_devices[i].ok) {
@@ -43,6 +47,7 @@ bool app_hardware_init(void)
     imu_ready = false;
     if (mpu6050Init(&imu_device, MPU6050_DIR_DEFAULT,
                     MPU6050_ACC_2G, MPU6050_GIRO_500)) {
+        uartWriteString(UART_USB, "APP: MPU6050 OK; calibrando giro...\r\n");
         for (unsigned i = 0; i < APP_IMU_CALIBRATION_ATTEMPTS; i++) {
             mpu6050Cal_t result = mpu6050CalibrarGiro(
                 &imu_device, APP_IMU_CALIBRATION_SAMPLES);
@@ -52,6 +57,10 @@ bool app_hardware_init(void)
             }
             if (result != MPU6050_CAL_MOVIDO) break;
         }
+        uartWriteString(UART_USB, imu_ready ?
+            "APP: calibracion OK.\r\n" : "APP: fallo de calibracion.\r\n");
+    } else {
+        uartWriteString(UART_USB, "APP: MPU6050 no inicializado.\r\n");
     }
 
     /* Habilitar UART al final: el sistema ya puede empezar a recibir. */
@@ -67,4 +76,9 @@ vl53l0x_t *app_hardware_tof_devices(void)
 mpu6050_t *app_hardware_imu_device(void)
 {
     return imu_ready ? &imu_device : NULL;
+}
+
+bool app_hardware_motors_ready(void)
+{
+    return motors_ready;
 }

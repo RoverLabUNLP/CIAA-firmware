@@ -1,0 +1,16 @@
+(version 1)
+
+# Placa de una sola cara (planchado de toner): todo el cobre va en B.Cu.
+(rule "Una sola cara: nada de cobre en F.Cu"
+  (layer "F.Cu")
+  (constraint disallow track via zone))
+
+# Pistas y separaciones de la catedra: minimo 0,6 mm.
+(rule "Separacion minima 0,6"
+  (constraint clearance (min 0.6mm)))
+
+# Excepcion: entre pads vecinos de las tiras 2x20 de la EDU-CIAA (pads 2x2 a paso 2,54)
+# quedan 0,54 mm. Es la medida de la catedra; por ahi no pasa ninguna pista.
+(rule "Pads de la tira 2x20"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && A.Parent.Reference == B.Parent.Reference")
+  (constraint clearance (min 0.5mm)))

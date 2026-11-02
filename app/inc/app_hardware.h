@@ -7,12 +7,13 @@
 
 #define APP_TOF_COUNT 3U
 
-/* Inicializa los drivers de la aplicacion antes de crear las tareas. */
+/* Solo desde StartupTask, con scheduler/tick activos y antes de crear lectores. */
 bool app_hardware_init(void);
 
 /* Acceso al arreglo inicializado que usa la tarea de sensores ToF. */
 vl53l0x_t *app_hardware_tof_devices(void);
 /* NULL si fallo el init o la calibracion. Instancia persistente, solo IMUTask. */
 mpu6050_t *app_hardware_imu_device(void);
+bool app_hardware_motors_ready(void);
 
 #endif /* APP_HARDWARE_H */
