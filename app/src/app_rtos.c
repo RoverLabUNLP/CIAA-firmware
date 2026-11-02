@@ -9,6 +9,7 @@ static SemaphoreHandle_t vehicle_state_inputs_mutex;
 static SemaphoreHandle_t Distance_data_mutex[4];//0 front, 1 left, 2 right, 3 rear
 static SemaphoreHandle_t encoder_data_mutex;
 static SemaphoreHandle_t IMU_data_mutex;
+static SemaphoreHandle_t i2c_mutex;
 static QueueHandle_t command_queue;
 static QueueHandle_t telemetry_queue;
 static VehicleData vehicle = {
@@ -27,6 +28,7 @@ void app_resources_init(void)
     vehicle_state_inputs_mutex = xSemaphoreCreateMutex();
     encoder_data_mutex = xSemaphoreCreateMutex();
     IMU_data_mutex = xSemaphoreCreateMutex();
+    i2c_mutex = xSemaphoreCreateMutex();
     for (int i = 0; i < 4; i++) {
         Distance_data_mutex[i] = xSemaphoreCreateMutex();
         configASSERT(Distance_data_mutex[i] != NULL);
@@ -42,6 +44,19 @@ void app_resources_init(void)
     configASSERT(telemetry_queue != NULL);
     configASSERT(encoder_data_mutex != NULL);
     configASSERT(IMU_data_mutex != NULL);
+    configASSERT(i2c_mutex != NULL);
+}
+
+void app_i2c_lock(void)
+{
+    BaseType_t result = xSemaphoreTake(i2c_mutex, portMAX_DELAY);
+    configASSERT(result == pdTRUE);
+}
+
+void app_i2c_unlock(void)
+{
+    BaseType_t result = xSemaphoreGive(i2c_mutex);
+    configASSERT(result == pdTRUE);
 }
 
 VehicleData *app_data_lock(void)

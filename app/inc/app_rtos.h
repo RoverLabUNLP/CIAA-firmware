@@ -26,6 +26,10 @@ void distance_sample_unlock(uint8_t index);
 IMUSample *IMU_sample_lock(void);
 void IMU_sample_unlock(void);
 
+/* Solo tareas: serializa transacciones IMU/ToF, sin tomar mutex de datos. */
+void app_i2c_lock(void);
+void app_i2c_unlock(void);
+
 /* Mutex exclusivo para publicar/copiar la muestra de encoders. */
 EncoderSample *encoder_lock(void);
 void encoder_unlock(void);

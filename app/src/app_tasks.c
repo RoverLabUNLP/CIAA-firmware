@@ -9,6 +9,8 @@
 #include "motores.h"
 #include "vl53l0x.h"
 #include "hcsr04.h"
+#include "app_imu.h"
+#include "app_communication.h"
 /* Cada tarea se limita a su funcion; el control es el unico dueño del PWM. */
 
 static void encoder_task(void *argument)
@@ -45,14 +47,21 @@ static void encoder_task(void *argument)
 static void imu_task(void *argument)
 {
     (void)argument;
+    mpu6050_t *imu = app_hardware_imu_device();
     TickType_t previous_wake = xTaskGetTickCount();
-    for(;;)
-    {
-        IMUSample sample = {0}; /* Invalida hasta integrar los drivers.
-                                 * Al leer correctamente: valid=true y
-                                 * sampled_at=xTaskGetTickCount(). */
-        set_vehicle_imu_sample(sample);
-        vTaskDelayUntil(&previous_wake,pdMS_TO_TICKS(APP_IMU_PERIOD_MS));
+    for (;;) {
+        if (imu != NULL) {
+            mpu6050Datos_t reading;
+            app_i2c_lock();
+            bool fresh = mpu6050Leer(imu, &reading) != 0;
+            TickType_t sampled_at = xTaskGetTickCount();
+            app_i2c_unlock();
+            if (fresh) {
+                set_vehicle_imu_sample(app_imu_convert(&reading, sampled_at));
+            }
+            /* Sin dato nuevo se conserva la muestra y su timestamp. */
+        }
+        vTaskDelayUntil(&previous_wake, pdMS_TO_TICKS(APP_IMU_PERIOD_MS));
     }
 }
 
@@ -138,6 +147,8 @@ static void control_task(void *argument)
         vehicle_get_state(&state);
         bool movement_enabled = initialized && command_available &&
                                 !communication_lost && !command.stop &&
+                                (command.linear_m_s != 0.0f ||
+                                 command.angular_rad_s != 0.0f) &&
                                 (state == VEHICLE_FORWARD ||
                                  state == VEHICLE_REVERSE);
 
@@ -216,12 +227,17 @@ static void distance_sensor_task(void *argument)
             if (!tof[i].ok) {
                 DistanceReading invalid_sample = { .valid = false };
                 vehicle_set_distance_sample(invalid_sample, i);
-            } else if (vl53l0xLeer(&tof[i], &mm)) {
-                DistanceReading sample = {
-                    .mm = mm,
-                    .valid = mm < VL53L0X_FUERA_RANGO
-                };
-                vehicle_set_distance_sample(sample, i);
+            } else {
+                app_i2c_lock();
+                bool fresh = vl53l0xLeer(&tof[i], &mm) != 0;
+                app_i2c_unlock();
+                if (fresh) {
+                    DistanceReading sample = {
+                        .mm = mm,
+                        .valid = mm < VL53L0X_FUERA_RANGO
+                    };
+                    vehicle_set_distance_sample(sample, i);
+                }
             }
         }
 
@@ -293,11 +309,11 @@ static void communication_task(void *argument)
     (void)argument;
     TickType_t previous_wake = xTaskGetTickCount();
     for (;;) {
-        /* TODO RX: recoger bytes del driver UART sin bloquear indefinidamente,
-         * reconstruir y validar tramas. Solo despues crear VehicleCommand,
-         * asignar received_at = xTaskGetTickCount() y enviarlo a command_queue.
-         * Definir que hacer si la cola esta llena. Una trama invalida no debe
-         * renovar el tiempo de comunicacion. No hay productor RX todavia. */
+        VehicleCommand command;
+        if (app_communication_receive(&command)) {
+            BaseType_t result = xQueueOverwrite(app_command_queue(), &command);
+            configASSERT(result == pdPASS);
+        }
 
         Telemetry latest;
         if (xQueueReceive(app_telemetry_queue(), &latest, 0) == pdTRUE) {
@@ -317,12 +333,8 @@ static void state_task(void *argument)
     TickType_t previous_telemetry = previous_wake;
     for (;;) {
         VehicleCommand command;
-        /* Drenado acotado: no monopolizar CPU si llegan comandos continuos.
-         * El productor futuro debe validar tramas y asignar su timestamp. */
-        for (unsigned i = 0; i < APP_COMMAND_QUEUE_LENGTH; ++i) {
-            if (xQueueReceive(app_command_queue(), &command, 0) != pdTRUE) {
-                break;
-            }
+        /* Buzon de un comando: no se ejecutan consignas antiguas en secuencia. */
+        if (xQueueReceive(app_command_queue(), &command, 0) == pdTRUE) {
             VehicleData *data = app_data_lock();
             data->command = command;
             data->has_command = true;
@@ -348,9 +360,23 @@ static void state_task(void *argument)
         vehicle_state_update(&state_inputs);
 
         data = app_data_lock();
-        Telemetry telemetry = { .vehicle = *data };
+        /* Cada muestra usa su propio mutex; data_mutex no protege sensores. */
+        Telemetry telemetry = { .vehicle = {
+            .command = data->command,
+            .has_command = data->has_command,
+            .communication_lost = data->communication_lost,
+            .system_initialized = data->system_initialized,
+            .left_output = data->left_output,
+            .right_output = data->right_output
+        }};
         app_data_unlock();
+        telemetry.vehicle.state_inputs = state_inputs;
         vehicle_get_state(&telemetry.vehicle.state);
+        get_vehicle_encoders(&telemetry.vehicle.encoders);
+        get_vehicle_imu_sample(&telemetry.vehicle.imu);
+        for (uint8_t i = 0; i < 4U; i++) {
+            get_vehicle_distance_sample(&telemetry.vehicle.distances.readings[i], i);
+        }
 
         TickType_t now = xTaskGetTickCount();
         if ((TickType_t)(now - previous_telemetry) >=

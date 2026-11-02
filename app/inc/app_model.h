@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "FreeRTOS.h"
 
-/* Vocabulario inicial. Unidades y protocolo deben acordarse con el equipo. */
+/* Modelo interno: velocidades en unidades fisicas, independiente de la web. */
 typedef enum {
     VEHICLE_STARTUP,
     VEHICLE_FORWARD,
@@ -57,8 +57,13 @@ typedef struct{
     float y;
 } vector2D;
 typedef struct {
-    vector2D acceleration;
-    vector2D angular_rate;
+    float x;
+    float y;
+    float z;
+} Vector3D;
+typedef struct {
+    Vector3D acceleration; /* m/s2, incluye gravedad; ejes del sensor. */
+    Vector3D angular_rate; /* rad/s, ejes del sensor. */
     bool valid;
     TickType_t sampled_at;
 } IMUSample;
@@ -72,7 +77,7 @@ typedef struct {
     IMUSample imu;
     bool communication_lost;
     bool system_initialized;
-    float left_output;  /* Salidas propuestas, no conectadas al hardware. */
+    float left_output;  /* Porcentaje aplicado a cada motor, -100..100. */
     float right_output;
 } VehicleData;
 

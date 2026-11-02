@@ -14,6 +14,12 @@
 #define APP_HEARTBEAT_PERIOD_MS 500U
 #define APP_COMMAND_TIMEOUT_MS 300U /* Objetivo preliminar; no incluye actuacion. */
 #define APP_DISTANCE_INVALID_ALERT_COUNT 5U
+#define APP_IMU_CALIBRATION_SAMPLES 200U
+#define APP_IMU_CALIBRATION_ATTEMPTS 3U
+
+/* La web envia TWIST normalizado; el PID siempre recibe unidades fisicas. */
+#define APP_WEB_LINEAR_SCALE_M_S 0.20f
+#define APP_WEB_ANGULAR_SCALE_RAD_S 1.00f
 
 /* Geometria y PID iniciales para el control diferencial; calibrar en el auto. */
 #define APP_WHEEL_DIAMETER_M 0.065f /* rueda del kit: 65 mm */
@@ -33,6 +39,6 @@
 #define APP_STATE_PRIORITY   1U
 
 #define APP_TASK_STACK_WORDS 256U /* 1024 bytes por tarea en Cortex-M4. */
-#define APP_COMMAND_QUEUE_LENGTH 8U
+#define APP_COMMAND_QUEUE_LENGTH 1U /* Buzon: prevalece el ultimo comando. */
 
 #endif

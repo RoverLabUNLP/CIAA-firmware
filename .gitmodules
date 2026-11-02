@@ -1,3 +1,6 @@
 [submodule "drivers"]
 	path = drivers
 	url = https://github.com/RoverLabUNLP/Drivers.git
+[submodule "esp32-cam"]
+	path = esp32-cam
+	url = https://github.com/RoverLabUNLP/esp32-cam.git

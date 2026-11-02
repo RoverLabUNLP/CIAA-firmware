@@ -114,24 +114,15 @@ void get_vehicle_distance_sample(DistanceReading *sample, uint8_t index)
 void set_vehicle_imu_sample(IMUSample sample)
 {
     IMUSample* imu_sample = IMU_sample_lock();
-    imu_sample->acceleration.x = sample.acceleration.x;
-    imu_sample->acceleration.y = sample.acceleration.y;
-    imu_sample->angular_rate.x = sample.angular_rate.x;
-    imu_sample->angular_rate.y = sample.angular_rate.y;
-    imu_sample->valid = sample.valid;
-    imu_sample->sampled_at = sample.sampled_at;
+    *imu_sample = sample;
     IMU_sample_unlock();
 }
 
 void get_vehicle_imu_sample(IMUSample *sample)
 {
+    if (sample == NULL) return;
     IMUSample* imu_sample = IMU_sample_lock();
-    sample->acceleration.x = imu_sample->acceleration.x;
-    sample->acceleration.y = imu_sample->acceleration.y;
-    sample->angular_rate.x = imu_sample->angular_rate.x;
-    sample->angular_rate.y = imu_sample->angular_rate.y;
-    sample->valid = imu_sample->valid;
-    sample->sampled_at = imu_sample->sampled_at;
+    *sample = *imu_sample;
     IMU_sample_unlock();
 }
 

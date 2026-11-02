@@ -5,8 +5,12 @@
 #include "motores.h"
 #include "pines.h"
 #include "tiempo.h"
+#include "app_config.h"
+#include "app_communication.h"
 
 static vl53l0x_t tof_devices[APP_TOF_COUNT];
+static mpu6050_t imu_device;
+static bool imu_ready;
 static const gpioMap_t tof_xshut[APP_TOF_COUNT] = {
     PIN_XSHUT1, PIN_XSHUT2, PIN_XSHUT3
 };
@@ -36,10 +40,31 @@ bool app_hardware_init(void)
         }
     }
 
-    return initialized_tof == APP_TOF_COUNT;
+    imu_ready = false;
+    if (mpu6050Init(&imu_device, MPU6050_DIR_DEFAULT,
+                    MPU6050_ACC_2G, MPU6050_GIRO_500)) {
+        for (unsigned i = 0; i < APP_IMU_CALIBRATION_ATTEMPTS; i++) {
+            mpu6050Cal_t result = mpu6050CalibrarGiro(
+                &imu_device, APP_IMU_CALIBRATION_SAMPLES);
+            if (result == MPU6050_CAL_OK) {
+                imu_ready = true;
+                break;
+            }
+            if (result != MPU6050_CAL_MOVIDO) break;
+        }
+    }
+
+    /* Habilitar UART al final: el sistema ya puede empezar a recibir. */
+    app_communication_init();
+    return initialized_tof == APP_TOF_COUNT && imu_ready;
 }
 
 vl53l0x_t *app_hardware_tof_devices(void)
 {
     return tof_devices;
+}
+
+mpu6050_t *app_hardware_imu_device(void)
+{
+    return imu_ready ? &imu_device : NULL;
 }
